@@ -1,0 +1,66 @@
+service: serverless-example
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-dynamodb-local
+  - serverless-offline
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'local'}
+  runtime: nodejs16.x
+
+  environment:
+    DYNAMODB_ENDPOINT: ${self:custom.endpoints.dynamodbURL}
+
+  iam:
+    roles:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - 'dynamodb:Query'
+            - 'dynamodb:Scan'
+            - 'dynamodb:GetItem'
+            - 'dynamodb:PutItem'
+            - 'dynamodb:UpdateItem'
+            - 'dynamodb:DeleteItem'
+          Resource:
+            - ${self:custom.tables.users.arn}
+            - ${self:custom.tables.todos.arn}
+
+custom:
+  tables:
+    users:
+      name: users
+      arn: !GetAtt usersTable.Arn
+    todos:
+      name: todos
+      arn: !GetAtt todosTable.Arn
+
+  dynamodb:
+    stages:
+      - ${self:provider.stage}
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+
+  endpoints:
+    dynamodbURL: 'http://localhost:8000'
+
+resources:
+  Resources:
+    usersTable: ${file(serverless/resources/users-table.yml):usersTable}
+    todosTable: ${file(serverless/resources/todos-table.yml):todosTable}
+
+functions:
+  server:
+    handler: src/server.handler
+    timeout: 30
+    events:
+      - http:
+          method: ANY
+          path: /
+      - http:
+          method: ANY
+          path: '{proxy+}'

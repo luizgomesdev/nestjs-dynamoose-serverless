@@ -1,0 +1,27 @@
+usersTable:
+  Type: AWS::DynamoDB::Table
+
+  Properties:
+    TableName: ${self:custom.tables.users.name}
+
+    AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: email
+        AttributeType: S
+
+    GlobalSecondaryIndexes:
+      - IndexName: email-index
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+
+    KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+
+    BillingMode: PAY_PER_REQUEST
